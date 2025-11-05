@@ -1,5 +1,5 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette.requests import Request
@@ -40,7 +40,7 @@ def sign_up(full_name:str, email:str, password:str,image:UploadFile, db: Session
 
 @user_router.post("/sign_in")
 @limiter.limit("5/minute")
-def sign_in(request: Request, db: Session = Depends(database), form_data: OAuth2PasswordRequestForm = Depends()):
+def sign_in(request: Request, db: Session = Depends(database), form_data: OAuth2PasswordRequestForm = Depends(), response: Response = None):
 
     user = db.query(Users).filter(Users.email == form_data.username).first()
     if user:
@@ -64,10 +64,22 @@ def sign_in(request: Request, db: Session = Depends(database), form_data: OAuth2
     refresh_token = create_refresh_token(
         data={"sub": user.email}, expires_delta=refresh_token_expires
     )
+
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=int(refresh_token_expires.total_seconds()),
+        path="/"
+    )
+
+
     return {
         "id": user.id,
         "access_token": access_token,
-        "refresh_token": refresh_token,
         "token_type": "bearer",
     }
 
