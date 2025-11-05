@@ -30,7 +30,7 @@ def add_film(form: FilmsModel, db: Session = Depends(database),
 @film_router.get("/films")
 def get_films(title: str = None, film_id: int = None,  db: Session = Depends(database)):
     if film_id:
-        film = db.query(Films).filter(Films.id == film_id).first()
+        film = db.query(Films).filter(Films.id == film_id).all()
         if not film:
             raise HTTPException(status_code=404, detail="Film topilmadi")
         film.view += 1
